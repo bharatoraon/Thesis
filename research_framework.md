@@ -78,29 +78,36 @@ H5. **A large share of observed transfer friction is operationally remediable**,
 ### 8.1 Time-expanded multimodal network workflow
 1. **Ingest GTFS and spatial layers** for bus (MTC), metro (CMRL), and suburban rail, plus station/stop geometry and transfer locations.【F:cmrl/CMRL gtfs/agency.txt†L1-L2】
 2. **Normalize time and service calendars** by selecting a representative weekday and generating service-day schedules for each mode.
-3. **Construct mode-specific time-expanded graphs** where each stop-event (stop_id, trip_id, time) is a node and edges represent in-vehicle travel, dwell, and waiting between successive events.
-4. **Add walking-access links** between nearby stops/stations (e.g., ≤500–800m) using station boundary or entry/exit points, with time costs derived from a walking speed assumption.
-5. **Create transfer edges** between modal layers at interchange locations, enforcing minimum transfer times and transfer feasibility windows.
-6. **Compute time-dependent travel times** for OD pairs (or zone centroids), producing an origin–destination travel-time matrix for each analysis period.
+3. **Build mode-specific time-expanded graphs** where each stop-event (stop_id, trip_id, time) is a node and edges represent in-vehicle travel, dwell, and waiting between successive events.
+4. **Add walking-access links** between nearby stops/stations (e.g., ≤500–800 m) using station boundary or entry/exit points, with time costs derived from a walking speed assumption.
+5. **Create transfer edges** between modal layers at interchange locations, enforcing minimum transfer times, transfer feasibility windows, and access constraints.
+6. **Compute time-dependent travel times** for OD pairs (or ward centroids), producing an origin–destination travel-time matrix for each analysis period.
 
 ### 8.2 Transfer Friction Index (TFI) definition
-Let each interchange \(i\) have transfers \(k\) across modes. For each transfer \(k\), compute:
+For each interchange \(i\) with transfers \(k\), compute:
 - **Expected transfer wait** \(W_{ik}\) (minutes): average waiting time between arrival and next feasible departure.
-- **Missed-connection probability** \(P_{ik}\): share of arrivals that miss the next departure given schedule reliability (or buffer time assumptions).
-- **Access constraint penalty** \(A_{ik}\): walking time or station access penalty (minutes).
+- **Missed-connection probability** \(P_{ik}\): share of arrivals that miss the next departure given buffer time assumptions.
+- **Access constraint penalty** \(A_{ik}\) (minutes): walking time or station-access penalty.
 
-Define a normalized, bounded friction score per transfer:
-\n\[\nTFI_{ik} = \\alpha \\cdot \\frac{W_{ik}}{W_{ref}} + \\beta \\cdot P_{ik} + \\gamma \\cdot \\frac{A_{ik}}{A_{ref}}\n\]\n
-where \(W_{ref}\) and \(A_{ref}\) are reference thresholds (e.g., 10 minutes) and \(\alpha, \\beta, \\gamma\) are weights (sum to 1).
+Define a normalized friction score per transfer:
 
-Aggregate to interchange level using a weighted mean by transfer volume proxy \(V_{ik}\) (e.g., trip counts or connecting services):
-\n\[\nTFI_i = \\frac{\\sum_k V_{ik} \\cdot TFI_{ik}}{\\sum_k V_{ik}}\n\]\n
+```
+TFI_ik = α * (W_ik / W_ref) + β * P_ik + γ * (A_ik / A_ref)
+```
 
-**Sensitivity analysis:** vary \(\alpha, \\beta, \\gamma\) (e.g., 0.2–0.5) and reference thresholds to test robustness of spatial patterns.
+Where \(W_{ref}\) and \(A_{ref}\) are reference thresholds (e.g., 10 minutes) and \(\alpha, \beta, \gamma\) are weights (sum to 1).
+
+Aggregate to the interchange level using a weighted mean by transfer volume proxy \(V_{ik}\) (trip counts, connecting services, or boarding volume):
+
+```
+TFI_i = (Σ_k V_ik * TFI_ik) / (Σ_k V_ik)
+```
+
+**Sensitivity analysis:** vary \(\alpha, \beta, \gamma\) (e.g., 0.2–0.5) and reference thresholds to test robustness of spatial patterns and to identify which component drives inequity.
 
 ### 8.3 Peak vs. off-peak segmentation
-- **Peak period:** weekday 07:00–10:00 and 17:00–20:00 (or locally relevant windows).\n
-- **Off-peak period:** weekday 10:00–17:00.\n
+- **Peak period:** weekday 07:00–10:00 and 17:00–20:00 (or locally relevant windows).
+- **Off-peak period:** weekday 10:00–17:00.
 For each period, recompute the time-expanded network, OD travel times, and TFI, then compare spatial patterns of friction and accessibility.
 
 ### 8.4 Ward-level aggregation for equity analysis
